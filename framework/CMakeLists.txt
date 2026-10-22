@@ -39,8 +39,7 @@ target_compile_definitions(ogl_framework
         OGL_PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
 )
 
-target_link_directories(ogl_framework PUBLIC ${CMAKE_SOURCE_DIR}/lib)
-target_link_libraries(ogl_framework PUBLIC glfw3)
+target_link_libraries(ogl_framework PUBLIC glfw)
 
 if(WIN32)
     target_link_libraries(ogl_framework PUBLIC opengl32)

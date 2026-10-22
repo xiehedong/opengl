@@ -5,12 +5,14 @@
 ```text
 opengl/
   framework/     → ogl_framework（静态库）
+  libs/          → （规划）与 GL 解耦的算法/程序生成网格，如 procmesh、德劳内核心
   samples/       → 各篇博文 demo（可执行文件）
   assets/        → 共享资源（着色器、纹理、字体）
   external/imgui → Dear ImGui（编入 framework）
+  cmake/         → 依赖（GLFW FetchContent）、可选 CUDA 工具链脚本
 ```
 
-每个 sample 链接 `ogl_framework`，只保留本篇场景逻辑（几何、uniform、ImGui 面板）。窗口、输入、资源路径、ImGui 生命周期由 `ogl::Application` 统一处理。
+每个 sample 链接 `ogl_framework`，只保留本篇场景逻辑（几何、uniform、ImGui 面板）。窗口、输入、资源路径、ImGui 生命周期由 `ogl::Application` 统一处理。GLFW 不作为 vendored 头文件/预编译库，由根 CMake 通过 `cmake/Dependencies.cmake` 拉取源码并链接目标 `glfw`（详见 [build.md](build.md)）。
 
 ## Application 生命周期
 
@@ -20,12 +22,28 @@ opengl/
 4. `OnInit()` — sample 创建 VAO、Shader、纹理等
 5. 主循环：
    - 计算 `dt` / FPS
-   - 键盘移动（若 ImGui 未抢占）
+   - `ProcessInput`（如 `Escape` 关闭窗口）
+   - 鼠标回调驱动 `Camera`：左键轨道、中键平移、滚轮缩放（`WantCaptureMouse` 为真时不交给相机，见 [ui.md](ui.md)）
    - `ImGuiLayer::BeginFrame`
-   - `OnUpdate` → `OnRender` → `OnImGui`
+   - `OnUpdate` → `UpdateSceneBounds`（`OnGatherSceneBounds` + 可选首帧 `FrameScene`）→ `OnRender` → `OnImGui`
    - `ImGuiLayer::EndFrameAndRender`
    - `SwapBuffers` + `PollEvents`
 6. `OnShutdown()` → `ImGuiLayer::Shutdown`
+
+## 相机与场景包围盒
+
+- `ogl::Camera` 为轨道相机：状态为 `Target`、`Yaw`、`Pitch`、`Distance`；机位由 `Target` 与朝向推算，不单独存储。
+- Sample 通过 `OnGatherSceneBounds` 向 `SceneBounds` 上报几何包围盒；`Application` 在首帧（或调用 `RequestSceneFrame()` 后下一帧）用 `Camera::FrameScene` 将观察中心对准包围盒中心并调整距离与近远裁剪面。
+- `Camera::MakePickRay` 供日后其他主题（如物体拾取）使用；**德劳内系列** 在程序内生成点与插入序列，不依赖拾取。详见 [roadmap.md](roadmap.md)。
+
+## 规划中的 framework 能力
+
+下列内容见 [roadmap.md](roadmap.md)，实现后在本节改为正式说明并更新 API 头文件：
+
+- **管线与着色器**：`ogl::Shader` 扩展为可选 geometry 阶段；粗线系列仅 GS 路径。
+- **网格与缓冲**：顶点布局、VAO/VBO/EBO 封装，静态/动态上传，实例化与（工程升级后可选的）间接绘制。
+- **调试与性能**：CPU/GPU 计时与 ImGui 统计面板。
+- **程序生成网格**：共享模块生成球面、带孔面、立方体及劣质三角网输入，供德劳内与大规模 sample 使用。
 
 ## 与 Hexo 博客仓库的关系
 

@@ -12,7 +12,7 @@ OpenGL 3.3 Core 博文配套源码：可复用的 `ogl_framework` 静态库 + �
 - CMake 3.16+
 - 可选：Ninja（Visual Studio 的「C++ CMake 工具」可安装）
 
-当前 **Phase 1** 使用预编译 `lib/glfw3.lib`（MSVC x64）。MinGW / Linux 读者需等待后续 FetchContent 迁移（见 `docs/build.md`）。
+**GLFW** 由 CMake **FetchContent** 在配置时拉取并构建（见 `docs/build.md`）；首次配置需网络访问 GitHub。Linux 等环境需自行安装 OpenGL / 窗口系统开发包。
 
 ## 构建
 
@@ -50,9 +50,12 @@ cmake --build build/vs --config Debug
 
 ## 文档
 
-- [docs/build.md](docs/build.md) — 构建、资源路径、常见错误
+- [docs/build.md](docs/build.md) — 构建、资源路径、OpenGL 版本、常见错误
 - [docs/architecture.md](docs/architecture.md) — framework 与 samples、与 Hexo 双仓关系
+- [docs/roadmap.md](docs/roadmap.md) — 博文系列规划、待建设能力与工程升级
 - [docs/ui.md](docs/ui.md) — Dear ImGui、输入抢占、中文字体
+
+**维护约定**：功能、构建或示例行为有变动时，须在同一轮改动中同步更新上表及相关文档；Cursor 侧见 [.cursor/rules/docs-sync.mdc](.cursor/rules/docs-sync.mdc)（`alwaysApply`）。
 
 ## 资源路径
 

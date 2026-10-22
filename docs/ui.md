@@ -8,12 +8,11 @@ ImGui 使用 OpenGL3 后端，GLSL `#version 130`；场景着色器可为 `#vers
 
 ## 输入抢占（WantCapture）
 
-`Application` 在以下情况 **不** 把输入交给相机：
+相机**仅使用鼠标**（左键轨道、中键平移、滚轮缩放）。`Application` 在 `ImGui::GetIO().WantCaptureMouse` 为真时 **不** 把上述操作交给相机（滚轮缩放同样被忽略）；在 ImGui 控件上按下鼠标时，释放按键会结束轨道/平移拖动状态。
 
-- `ImGui::GetIO().WantCaptureKeyboard` 为真时，忽略 WASD
-- `WantCaptureMouse` 为真时，忽略鼠标旋转与滚轮缩放
+在 3D 视图区域（ImGui 未抢占鼠标）拖动或滚轮即可操作相机；在滑条、按钮等控件上操作时不应带动视角或缩放。
 
-在 ImGui 面板外拖动鼠标仍可旋转相机。在滑条、按钮上操作时不应带动视角。
+键盘：`Escape` 关闭窗口（`ProcessInput`，不依赖 WantCapture）。其余按键由 ImGui 控件使用（`WantCaptureKeyboard` 为真时由 ImGui 消费）；当前 framework **不** 用键盘驱动相机。
 
 ## 在 sample 中加控件
 
