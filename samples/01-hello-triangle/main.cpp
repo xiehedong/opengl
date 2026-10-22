@@ -56,6 +56,14 @@ protected:
         return m_shader->ID != 0;
     }
 
+    void OnGatherSceneBounds(ogl::SceneBounds& bounds) override
+    {
+        bounds.Include(glm::vec3(-0.5f, 0.5f, 0.0f));
+        bounds.Include(glm::vec3(0.5f, 0.5f, 0.0f));
+        bounds.Include(glm::vec3(0.5f, -0.5f, 0.0f));
+        bounds.Include(glm::vec3(-0.5f, -0.5f, 0.0f));
+    }
+
     void OnRender() override
     {
         glClearColor(m_clearColor[0], m_clearColor[1], m_clearColor[2], m_clearColor[3]);
@@ -85,6 +93,7 @@ protected:
         ImGui::ColorEdit4("Triangle color", m_triColor);
         ImGui::Checkbox("Wireframe", &m_wireframe);
         ImGui::Text("FPS: %.1f", Fps());
+        ImGui::Text("LMB: orbit, MMB: pan, wheel: zoom");
         ImGui::End();
     }
 

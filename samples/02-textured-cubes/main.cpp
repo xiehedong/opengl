@@ -148,8 +148,7 @@ protected:
         const float aspect = height > 0 ? static_cast<float>(width) / static_cast<float>(height) : 1.0f;
 
         m_shader->SetMat4("view", GetCamera().GetViewMatrix());
-        const glm::mat4 proj = glm::perspective(glm::radians(GetCamera().Zoom), aspect, 0.1f, 100.0f);
-        m_shader->SetMat4("proj", proj);
+        m_shader->SetMat4("proj", GetCamera().GetProjectionMatrix(aspect));
 
         glBindVertexArray(m_vao);
         const float timeValue = static_cast<float>(glfwGetTime());
@@ -165,14 +164,32 @@ protected:
         glBindVertexArray(0);
     }
 
+    void OnGatherSceneBounds(ogl::SceneBounds& bounds) override
+    {
+        const ogl::BoundingBox unitCube = ogl::BoundingBox::FromCenterHalfExtents(glm::vec3(0.0f), glm::vec3(0.5f));
+        const float timeValue = static_cast<float>(glfwGetTime());
+        for (size_t i = 0; i < m_cubePositions.size(); ++i)
+        {
+            glm::mat4 model = glm::mat4(1.0f);
+            model = glm::translate(model, m_cubePositions[i]);
+            const float angle = m_cubeAngles[i] * timeValue;
+            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
+            bounds.Include(unitCube, model);
+        }
+    }
+
     void OnImGui() override
     {
         ImGui::Begin("Textured Cubes");
         ImGui::SliderFloat("interpolation", &m_interpolation, 0.0f, 1.0f);
         ImGui::Checkbox("Animate interpolation", &m_animateInterpolation);
-        ImGui::SliderFloat("Camera zoom", &GetCamera().Zoom, 1.0f, 90.0f);
+        ImGui::SliderFloat("Camera distance", &GetCamera().Distance, 0.5f, 200.0f);
         ImGui::Text("FPS: %.1f", Fps());
-        ImGui::Text("WASD: move camera");
+        ImGui::Text("LMB: orbit, MMB: pan, wheel: zoom");
+        if (ImGui::Button("Frame scene"))
+        {
+            RequestSceneFrame();
+        }
         ImGui::End();
     }
 

@@ -38,6 +38,7 @@ public:
     void PollEvents();
 
     void SetFramebufferSizeCallback(void (*callback)(GLFWwindow*, int, int));
+    void SetMouseButtonCallback(void (*callback)(GLFWwindow*, int, int, int));
     void SetCursorPosCallback(void (*callback)(GLFWwindow*, double, double));
     void SetScrollCallback(void (*callback)(GLFWwindow*, double, double));
 

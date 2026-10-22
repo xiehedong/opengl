@@ -2,7 +2,9 @@ set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/external/imgui)
 
 set(OGL_FRAMEWORK_SOURCES
     src/Application.cpp
+    src/BoundingBox.cpp
     src/Camera.cpp
+    src/SceneBounds.cpp
     src/FileSystem.cpp
     src/ImGuiLayer.cpp
     src/Shader.cpp

@@ -107,6 +107,14 @@ void Window::SetFramebufferSizeCallback(void (*callback)(GLFWwindow*, int, int))
     }
 }
 
+void Window::SetMouseButtonCallback(void (*callback)(GLFWwindow*, int, int, int))
+{
+    if (m_window)
+    {
+        glfwSetMouseButtonCallback(m_window, callback);
+    }
+}
+
 void Window::SetCursorPosCallback(void (*callback)(GLFWwindow*, double, double))
 {
     if (m_window)
