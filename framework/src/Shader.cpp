@@ -10,55 +10,126 @@ namespace ogl
 {
 
 Shader::Shader(const std::filesystem::path& vertPath, const std::filesystem::path& fragPath)
+    : Shader(vertPath, std::filesystem::path{}, fragPath)
 {
-    std::string vertexCode;
-    std::string fragmentCode;
-    std::ifstream vShaderFile;
-    std::ifstream fShaderFile;
-    vShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    fShaderFile.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    try
+}
+
+Shader::Shader(const std::filesystem::path& vertPath,
+               const std::filesystem::path& geomPath,
+               const std::filesystem::path& fragPath)
+{
+    const std::string vertexCode = LoadFile(vertPath);
+    const std::string fragmentCode = LoadFile(fragPath);
+
+    const unsigned int vertex = CompileStage(GL_VERTEX_SHADER, vertexCode);
+    unsigned int geometry = 0;
+    if (!geomPath.empty())
     {
-        vShaderFile.open(vertPath);
-        fShaderFile.open(fragPath);
-        std::stringstream vShaderStream;
-        std::stringstream fShaderStream;
-        vShaderStream << vShaderFile.rdbuf();
-        fShaderStream << fShaderFile.rdbuf();
-        vShaderFile.close();
-        fShaderFile.close();
-        vertexCode = vShaderStream.str();
-        fragmentCode = fShaderStream.str();
+        const std::string geometryCode = LoadFile(geomPath);
+        geometry = CompileStage(GL_GEOMETRY_SHADER, geometryCode);
     }
-    catch (const std::ifstream::failure&)
-    {
-        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ: " << vertPath << " / " << fragPath << std::endl;
-    }
+    const unsigned int fragment = CompileStage(GL_FRAGMENT_SHADER, fragmentCode);
 
-    const char* vShaderCode = vertexCode.c_str();
-    const char* fShaderCode = fragmentCode.c_str();
-
-    const unsigned int vertex = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertex, 1, &vShaderCode, nullptr);
-    glCompileShader(vertex);
-    CheckCompileErrors(vertex, "VERTEX");
-
-    const unsigned int fragment = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragment, 1, &fShaderCode, nullptr);
-    glCompileShader(fragment);
-    CheckCompileErrors(fragment, "FRAGMENT");
-
-    ID = glCreateProgram();
-    glAttachShader(ID, vertex);
-    glAttachShader(ID, fragment);
-    glLinkProgram(ID);
-    CheckCompileErrors(ID, "PROGRAM");
+    LinkProgram(vertex, geometry, fragment);
 
     glDeleteShader(vertex);
+    if (geometry != 0)
+    {
+        glDeleteShader(geometry);
+    }
     glDeleteShader(fragment);
 }
 
-void Shader::CheckCompileErrors(unsigned int shader, const std::string& type) const
+Shader::~Shader()
+{
+    if (ID != 0)
+    {
+        glDeleteProgram(ID);
+        ID = 0;
+    }
+}
+
+Shader::Shader(Shader&& other) noexcept
+    : ID(other.ID)
+{
+    other.ID = 0;
+}
+
+Shader& Shader::operator=(Shader&& other) noexcept
+{
+    if (this != &other)
+    {
+        if (ID != 0)
+        {
+            glDeleteProgram(ID);
+        }
+        ID = other.ID;
+        other.ID = 0;
+    }
+    return *this;
+}
+
+std::string Shader::LoadFile(const std::filesystem::path& path)
+{
+    std::string code;
+    std::ifstream file;
+    file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    try
+    {
+        file.open(path);
+        std::stringstream stream;
+        stream << file.rdbuf();
+        file.close();
+        code = stream.str();
+    }
+    catch (const std::ifstream::failure&)
+    {
+        std::cout << "ERROR::SHADER::FILE_NOT_SUCCESFULLY_READ: " << path << std::endl;
+    }
+    return code;
+}
+
+unsigned int Shader::CompileStage(unsigned int type, const std::string& source)
+{
+    const char* sourceCStr = source.c_str();
+    const unsigned int shader = glCreateShader(type);
+    glShaderSource(shader, 1, &sourceCStr, nullptr);
+    glCompileShader(shader);
+
+    std::string typeName;
+    switch (type)
+    {
+    case GL_VERTEX_SHADER:
+        typeName = "VERTEX";
+        break;
+    case GL_GEOMETRY_SHADER:
+        typeName = "GEOMETRY";
+        break;
+    case GL_FRAGMENT_SHADER:
+        typeName = "FRAGMENT";
+        break;
+    default:
+        typeName = "UNKNOWN";
+        break;
+    }
+    CheckCompileErrors(shader, typeName);
+    return shader;
+}
+
+void Shader::LinkProgram(unsigned int vert, unsigned int geom, unsigned int frag)
+{
+    ID = glCreateProgram();
+    glAttachShader(ID, vert);
+    if (geom != 0)
+    {
+        glAttachShader(ID, geom);
+    }
+    glAttachShader(ID, frag);
+    glLinkProgram(ID);
+    CheckCompileErrors(ID, "PROGRAM");
+}
+
+void Shader::CheckCompileErrors(unsigned int shader, const std::string& type)
 {
     int success = 0;
     char infoLog[1024];

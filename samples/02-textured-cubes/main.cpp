@@ -2,6 +2,9 @@
 #include <ogl/FileSystem.h>
 #include <ogl/Shader.h>
 #include <ogl/Texture2D.h>
+#include <ogl/VertexArray.h>
+#include <ogl/VertexBuffer.h>
+#include <ogl/VertexLayout.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -101,26 +104,15 @@ protected:
             m_cubeAngles[i] = static_cast<float>((std::rand() % 150) + 1);
         }
 
-        glGenVertexArrays(1, &m_vao);
-        glBindVertexArray(m_vao);
-
-        glGenBuffers(1, &m_vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), nullptr);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), reinterpret_cast<void*>(3 * sizeof(float)));
-        glEnableVertexAttribArray(1);
-
-        glBindVertexArray(0);
+        m_vbo.SetData(sizeof(vertices), vertices);
+        m_mesh.SetVertexBuffer(m_vbo, ogl::VertexLayout::Position3TexCoord2());
 
         m_shader->Use();
         m_shader->SetInt("texture1", 0);
         m_shader->SetInt("texture2", 1);
 
         glEnable(GL_DEPTH_TEST);
-        return m_shader->ID != 0 && m_texture1.Id() != 0 && m_texture2.Id() != 0;
+        return m_shader->IsValid() && m_texture1.Id() != 0 && m_texture2.Id() != 0;
     }
 
     void OnUpdate(float dt) override
@@ -150,7 +142,6 @@ protected:
         m_shader->SetMat4("view", GetCamera().GetViewMatrix());
         m_shader->SetMat4("proj", GetCamera().GetProjectionMatrix(aspect));
 
-        glBindVertexArray(m_vao);
         const float timeValue = static_cast<float>(glfwGetTime());
         for (size_t i = 0; i < m_cubePositions.size(); ++i)
         {
@@ -159,9 +150,8 @@ protected:
             const float angle = m_cubeAngles[i] * timeValue;
             model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
             m_shader->SetMat4("model", model);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
+            m_mesh.DrawArrays(GL_TRIANGLES, 0, 36);
         }
-        glBindVertexArray(0);
     }
 
     void OnGatherSceneBounds(ogl::SceneBounds& bounds) override
@@ -193,25 +183,13 @@ protected:
         ImGui::End();
     }
 
-    void OnShutdown() override
-    {
-        if (m_vbo != 0)
-        {
-            glDeleteBuffers(1, &m_vbo);
-        }
-        if (m_vao != 0)
-        {
-            glDeleteVertexArrays(1, &m_vao);
-        }
-    }
-
 private:
     std::unique_ptr<ogl::Shader> m_shader;
     ogl::Texture2D m_texture1;
     ogl::Texture2D m_texture2;
 
-    unsigned int m_vao = 0;
-    unsigned int m_vbo = 0;
+    ogl::VertexBuffer m_vbo;
+    ogl::VertexArray m_mesh;
 
     std::vector<glm::vec3> m_cubePositions;
     std::vector<float> m_cubeAngles;

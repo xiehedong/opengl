@@ -1,6 +1,10 @@
 #include <ogl/Application.h>
 #include <ogl/FileSystem.h>
+#include <ogl/IndexBuffer.h>
 #include <ogl/Shader.h>
+#include <ogl/VertexArray.h>
+#include <ogl/VertexBuffer.h>
+#include <ogl/VertexLayout.h>
 
 #include <glad/glad.h>
 
@@ -38,22 +42,12 @@ protected:
             2, 3, 0,
         };
 
-        glGenVertexArrays(1, &m_vao);
-        glBindVertexArray(m_vao);
+        m_vbo.SetData(sizeof(vertices), vertices);
+        m_ibo.SetData(sizeof(indices), indices);
+        m_mesh.SetVertexBuffer(m_vbo, ogl::VertexLayout::Position3());
+        m_mesh.SetIndexBuffer(m_ibo);
 
-        glGenBuffers(1, &m_vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-        glGenBuffers(1, &m_ebo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-        glEnableVertexAttribArray(0);
-
-        glBindVertexArray(0);
-        return m_shader->ID != 0;
+        return m_shader->IsValid();
     }
 
     void OnGatherSceneBounds(ogl::SceneBounds& bounds) override
@@ -81,9 +75,7 @@ protected:
         m_shader->Use();
         m_shader->SetVec4f("uColor", m_triColor[0], m_triColor[1], m_triColor[2], m_triColor[3]);
 
-        glBindVertexArray(m_vao);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-        glBindVertexArray(0);
+        m_mesh.DrawElements(GL_TRIANGLES, 6);
     }
 
     void OnImGui() override
@@ -97,27 +89,11 @@ protected:
         ImGui::End();
     }
 
-    void OnShutdown() override
-    {
-        if (m_ebo != 0)
-        {
-            glDeleteBuffers(1, &m_ebo);
-        }
-        if (m_vbo != 0)
-        {
-            glDeleteBuffers(1, &m_vbo);
-        }
-        if (m_vao != 0)
-        {
-            glDeleteVertexArrays(1, &m_vao);
-        }
-    }
-
 private:
     std::unique_ptr<ogl::Shader> m_shader;
-    unsigned int m_vao = 0;
-    unsigned int m_vbo = 0;
-    unsigned int m_ebo = 0;
+    ogl::VertexBuffer m_vbo;
+    ogl::IndexBuffer m_ibo;
+    ogl::VertexArray m_mesh;
     float m_clearColor[4] = {0.0f, 0.0f, 0.0f, 1.0f};
     float m_triColor[4] = {1.0f, 0.5f, 0.2f, 1.0f};
     bool m_wireframe = false;

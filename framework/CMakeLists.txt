@@ -1,17 +1,11 @@
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/external/imgui)
 
-set(OGL_FRAMEWORK_SOURCES
-    src/Application.cpp
-    src/BoundingBox.cpp
-    src/Camera.cpp
-    src/SceneBounds.cpp
-    src/FileSystem.cpp
-    src/ImGuiLayer.cpp
-    src/Shader.cpp
-    src/Texture2D.cpp
-    src/Window.cpp
-    src/glad.c
-    src/stb_image.cpp
+file(GLOB OGL_FRAMEWORK_SOURCES CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c"
+)
+
+set(IMGUI_SOURCES
     ${IMGUI_DIR}/imgui.cpp
     ${IMGUI_DIR}/imgui_draw.cpp
     ${IMGUI_DIR}/imgui_tables.cpp
@@ -20,7 +14,7 @@ set(OGL_FRAMEWORK_SOURCES
     ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp
 )
 
-add_library(ogl_framework STATIC ${OGL_FRAMEWORK_SOURCES})
+add_library(ogl_framework STATIC ${OGL_FRAMEWORK_SOURCES} ${IMGUI_SOURCES})
 
 target_include_directories(ogl_framework
     PUBLIC

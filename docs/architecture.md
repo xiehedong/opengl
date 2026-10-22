@@ -36,12 +36,28 @@ opengl/
 - Sample 通过 `OnGatherSceneBounds` 向 `SceneBounds` 上报几何包围盒；`Application` 在首帧（或调用 `RequestSceneFrame()` 后下一帧）用 `Camera::FrameScene` 将观察中心对准包围盒中心并调整距离与近远裁剪面。
 - `Camera::MakePickRay` 供日后其他主题（如物体拾取）使用；**德劳内系列** 在程序内生成点与插入序列，不依赖拾取。详见 [roadmap.md](roadmap.md)。
 
+## 着色器管线（`ogl::Shader`）
+
+- 两阶段：`Shader(vertPath, fragPath)`，与现有 sample 兼容。
+- 三阶段：`Shader(vertPath, geomPath, fragPath)`；`geomPath` 为空时与两阶段等价。几何着色器文件与 vert/frag 同目录，命名 `*.geom`（粗线系列 `20-thick-lines-gs` 再新增具体 shader）。
+- `Use`、`SetBool` / `SetInt` / `SetFloat` / `SetVec3f` / `SetVec4f` / `SetMat4`；程序对象在析构与移动时通过 `glDeleteProgram` 释放（`ID` 仍公开，`IsValid()` 可检查是否链接成功）。
+
+## 网格与缓冲
+
+| 类型 | 头文件 | 说明 |
+|------|--------|------|
+| `BufferUsage` | `ogl/BufferUsage.h` | `Static` / `Dynamic` / `Stream` → 对应 `GL_*_DRAW` |
+| `VertexLayout` | `ogl/VertexLayout.h` | stride + attribute；`Position3()`、`Position3TexCoord2()`；在已绑定 VAO + `ARRAY_BUFFER` 上 `Apply()` |
+| `VertexBuffer` | `ogl/VertexBuffer.h` | `SetData` / `SetSubData`，目标 `GL_ARRAY_BUFFER` |
+| `IndexBuffer` | `ogl/IndexBuffer.h` | `SetData` / `SetSubData`，目标 `GL_ELEMENT_ARRAY_BUFFER`；默认索引类型 `GL_UNSIGNED_INT` |
+| `VertexArray` | `ogl/VertexArray.h` | `SetVertexBuffer`、`SetIndexBuffer`；`SetInstanceBuffer`（在 `SetVertexBuffer` **之后**调用，`glVertexAttribDivisor`）；`DrawArrays` / `DrawElements` / `DrawElementsInstanced` |
+
+**动态网格上传**（德劳内等）：拓扑与顶点数不变时优先 `SetSubData`；容量变大时用 `SetData` 重新分配。`01` / `02` 使用静态 `SetData`；实例化 API 已预留，大规模系列再改用。
+
 ## 规划中的 framework 能力
 
-下列内容见 [roadmap.md](roadmap.md)，实现后在本节改为正式说明并更新 API 头文件：
+见 [roadmap.md](roadmap.md)：
 
-- **管线与着色器**：`ogl::Shader` 扩展为可选 geometry 阶段；粗线系列仅 GS 路径。
-- **网格与缓冲**：顶点布局、VAO/VBO/EBO 封装，静态/动态上传，实例化与（工程升级后可选的）间接绘制。
 - **调试与性能**：CPU/GPU 计时与 ImGui 统计面板。
 - **程序生成网格**：共享模块生成球面、带孔面、立方体及劣质三角网输入，供德劳内与大规模 sample 使用。
 

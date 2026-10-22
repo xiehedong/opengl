@@ -2,7 +2,7 @@
 
 ## 目录约定
 
-- `framework/` — `ogl_framework` 静态库（GLFW/GLAD、Shader、纹理、相机、Application、ImGui）
+- `framework/` — `ogl_framework` 静态库（GLFW/GLAD、Shader、VAO/VBO/IBO、纹理、相机、Application、ImGui）
 - `samples/` — 每篇博文对应的可执行目标
 - `assets/` — 着色器、纹理、UI 字体（构建后复制到各 sample 输出目录）
 - `external/imgui/` — Dear ImGui 源码（vendor）

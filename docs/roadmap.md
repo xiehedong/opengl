@@ -19,17 +19,15 @@
 
 下列能力计划在 `ogl_framework` 或紧邻的 `libs/` 中落地；具体 API 以实现时的头文件为准。
 
-### 1. 管线与着色器
+### 1. 管线与着色器 — **已完成（骨架）**
 
-- 扩展 `ogl::Shader`（或等价类型）：支持 **vert + 可选 geom + frag**，与 `assets/shaders/` 命名约定（如 `*.geom`）。
-- 粗线系列：输入拓扑为 **线段 + adjacency**（`GL_LINES_ADJACENCY`），GS 扩带宽与 miter 策略在着色器中完成。
-- 现有 vert/frag 两阶段 sample **保持兼容**。
+- `ogl::Shader`：**vert + 可选 geom + frag**、`*.geom` 命名约定；RAII 与两阶段构造兼容。详见 [architecture.md](architecture.md)。
+- **待做（粗线系列）**：输入拓扑为 **线段 + adjacency**（`GL_LINES_ADJACENCY`），GS 扩带宽与 miter 策略在着色器中完成（`20-thick-lines-gs`）。
 
-### 2. 网格与缓冲抽象
+### 2. 网格与缓冲抽象 — **已完成（骨架）**
 
-- 轻量封装：顶点布局、`VertexArray` / `VertexBuffer` / `IndexBuffer`（静态与动态更新）。
-- 支持索引绘制、实例化（`glDrawElementsInstanced` 等）；大规模系列再视 **OpenGL 版本策略** 引入 indirect / MDI。
-- 德劳内系列：动态三角网频繁改索引与顶点，需要 **动态 VBO/EBO** 与明确的 upload 策略（文档化）。
+- `VertexLayout` / `VertexBuffer` / `IndexBuffer` / `VertexArray`：静态与 `SetSubData` 动态更新；`DrawElementsInstanced` API。详见 [architecture.md](architecture.md)。
+- **待做**：大规模系列视 **OpenGL 版本策略** 引入 indirect / MDI；德劳内 sample 落地时接 `BufferUsage::Dynamic` 与每帧 upload。
 
 ### 3. 调试与性能计量
 
@@ -91,7 +89,7 @@
 ## 建议实施顺序
 
 1. ~~构建升级（Phase 2 GLFW、CMake 选项骨架、文档）~~ **已完成**
-2. 着色器多阶段 + 缓冲抽象 + 计时工具
+2. ~~着色器多阶段 + 缓冲抽象~~ **已完成（骨架）**；计时工具待做
 3. 程序生成网格库 + 德劳内 2D sample
 4. 曲面重剖分 sample
 5. 粗线 GS sample
