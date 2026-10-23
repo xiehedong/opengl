@@ -3,31 +3,68 @@
 #include <algorithm>
 #include <cmath>
 
+#include <glm/gtc/quaternion.hpp>
+
 namespace ogl
 {
 
-glm::vec3 Camera::Front() const
+namespace
+{
+
+glm::vec3 FrontFromEuler(float yaw, float pitch)
 {
     glm::vec3 front;
-    front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-    front.y = sin(glm::radians(Pitch));
-    front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
+    front.x = std::cos(glm::radians(yaw)) * std::cos(glm::radians(pitch));
+    front.y = std::sin(glm::radians(pitch));
+    front.z = std::sin(glm::radians(yaw)) * std::cos(glm::radians(pitch));
     return glm::normalize(front);
+}
+
+glm::vec3 RotateByQuat(const glm::quat& rotation, const glm::vec3& vector)
+{
+    return glm::mat3_cast(rotation) * vector;
+}
+
+} // namespace
+
+Camera::Camera()
+{
+    OrbitRestOffset = glm::normalize(-FrontFromEuler(Yaw, Pitch));
+    glm::vec3 restRight = glm::cross(WorldUp, OrbitRestOffset);
+    if (glm::dot(restRight, restRight) < 1e-8f)
+    {
+        restRight = glm::vec3(1.0f, 0.0f, 0.0f);
+    }
+    OrbitRestRight = glm::normalize(restRight);
+    OrbitRotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+    SyncOffsetFromRotation();
+}
+
+void Camera::SyncOffsetFromRotation()
+{
+    OrbitOffsetDirection = glm::normalize(RotateByQuat(OrbitRotation, OrbitRestOffset));
+}
+
+glm::vec3 Camera::Front() const
+{
+    return glm::normalize(-OrbitOffsetDirection);
 }
 
 glm::vec3 Camera::Position() const
 {
-    return Target - Front() * Distance;
+    return Target + OrbitOffsetDirection * Distance;
 }
 
 glm::vec3 Camera::Right() const
 {
-    return glm::normalize(glm::cross(Front(), WorldUp));
+    return glm::normalize(RotateByQuat(OrbitRotation, OrbitRestRight));
 }
 
 glm::vec3 Camera::Up() const
 {
-    return glm::normalize(glm::cross(Right(), Front()));
+    const glm::vec3 viewForward = Front();
+    const glm::vec3 right = Right();
+    return glm::normalize(glm::cross(right, viewForward));
 }
 
 glm::mat4 Camera::GetViewMatrix() const
@@ -42,9 +79,24 @@ glm::mat4 Camera::GetProjectionMatrix(float aspectRatio) const
 
 void Camera::ProcessOrbit(float deltaYaw, float deltaPitch)
 {
-    Yaw += deltaYaw * OrbitSensitivity;
-    Pitch += deltaPitch * OrbitSensitivity;
-    ClampPitch();
+    // Mouse right (+deltaYaw): scene CCW about +WorldUp when viewed from above (RH; camera path is CW).
+    const float dy = -deltaYaw * OrbitSensitivity;
+    const float dp = deltaPitch * OrbitSensitivity;
+
+    if (std::abs(dy) > 1e-6f)
+    {
+        const glm::quat qYaw = glm::angleAxis(glm::radians(dy), glm::normalize(WorldUp));
+        OrbitRotation = glm::normalize(qYaw * OrbitRotation);
+    }
+
+    if (std::abs(dp) > 1e-6f)
+    {
+        const glm::quat qPitch = glm::angleAxis(glm::radians(dp), OrbitRestRight);
+        OrbitRotation = glm::normalize(OrbitRotation * qPitch);
+    }
+
+    SyncOffsetFromRotation();
+    SyncEulerFromOrbit();
 }
 
 void Camera::ProcessPan(float deltaX, float deltaY)
@@ -66,6 +118,16 @@ void Camera::ProcessScroll(float wheelDelta)
 void Camera::SetOrbitTarget(const glm::vec3& target)
 {
     Target = target;
+}
+
+void Camera::ResetOrbitViewToNegativeZ()
+{
+    Yaw = -90.0f;
+    Pitch = 0.0f;
+    OrbitRotation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
+    OrbitRestOffset = glm::vec3(0.0f, 0.0f, 1.0f);
+    OrbitRestRight = glm::vec3(1.0f, 0.0f, 0.0f);
+    SyncOffsetFromRotation();
 }
 
 void Camera::FrameScene(const BoundingBox& sceneBounds, float aspectRatio)
@@ -118,9 +180,11 @@ PickRay Camera::MakePickRay(float screenX, float screenY, int viewportWidth, int
     return ray;
 }
 
-void Camera::ClampPitch()
+void Camera::SyncEulerFromOrbit()
 {
-    Pitch = std::clamp(Pitch, -89.0f, 89.0f);
+    const glm::vec3 front = Front();
+    Pitch = glm::degrees(std::asin(glm::clamp(front.y, -1.0f, 1.0f)));
+    Yaw = glm::degrees(std::atan2(front.z, front.x));
 }
 
 } // namespace ogl

@@ -10,13 +10,15 @@ ImGui 使用 OpenGL3 后端，GLSL `#version 130`；场景着色器可为 `#vers
 
 相机**仅使用鼠标**（左键轨道、中键平移、滚轮缩放）。`Application` 在 `ImGui::GetIO().WantCaptureMouse` 为真时 **不** 把上述操作交给相机（滚轮缩放同样被忽略）；在 ImGui 控件上按下鼠标时，释放按键会结束轨道/平移拖动状态。
 
+左键水平拖动：鼠标向右时，场景绕观察中心**从上往下看为逆时针**（右手系、绕 `+Y` 的机位运动为顺时针）。
+
 在 3D 视图区域（ImGui 未抢占鼠标）拖动或滚轮即可操作相机；在滑条、按钮等控件上操作时不应带动视角或缩放。
 
 键盘：`Escape` 关闭窗口（`ProcessInput`，不依赖 WantCapture）。其余按键由 ImGui 控件使用（`WantCaptureKeyboard` 为真时由 ImGui 消费）；当前 framework **不** 用键盘驱动相机。
 
 ## 在 sample 中加控件
 
-重写 `OnImGui()`，在 `ImGui::Begin` / `End` 之间写控件即可（见 `samples/02-textured-cubes/main.cpp`）。
+重写 `OnImGui()`，在 `ImGui::Begin` / `End` 之间写控件即可（见 `samples/02-textured-cubes/main.cpp`）。该 sample 提供 **Reset camera**（`ResetOrbitViewToNegativeZ` + 当前帧 `FrameScene`：焦点回包围盒中心、视线沿 \f$-Z\f$）与 **Frame scene**（仅重新拟合距离与裁剪，不改变当前轨道朝向）。
 
 ## 中文字体
 

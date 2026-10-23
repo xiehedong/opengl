@@ -4,6 +4,7 @@
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 namespace ogl
 {
@@ -22,6 +23,8 @@ public:
 
     float Yaw = -90.0f;
     float Pitch = 20.0f;
+    /// Unit vector from orbit target toward camera (derived from OrbitRotation).
+    glm::vec3 OrbitOffsetDirection{0.0f, -0.34202015f, 0.9396926f};
     float Distance = 10.0f;
     float FovY = 45.0f;
     float NearPlane = 0.1f;
@@ -33,7 +36,7 @@ public:
     float MinDistance = 0.05f;
     float MaxDistance = 10000.0f;
 
-    Camera() = default;
+    Camera();
 
     glm::vec3 Position() const;
     glm::vec3 Front() const;
@@ -48,12 +51,19 @@ public:
     void ProcessScroll(float wheelDelta);
 
     void SetOrbitTarget(const glm::vec3& target);
+    /// Identity orbit rotation; view along world -Z (camera on +Z), Yaw=-90, Pitch=0.
+    void ResetOrbitViewToNegativeZ();
     void FrameScene(const BoundingBox& sceneBounds, float aspectRatio);
 
     PickRay MakePickRay(float screenX, float screenY, int viewportWidth, int viewportHeight) const;
 
 private:
-    void ClampPitch();
+    glm::quat OrbitRotation{1.0f, 0.0f, 0.0f, 0.0f};
+    glm::vec3 OrbitRestOffset{0.0f, 0.0f, 1.0f};
+    glm::vec3 OrbitRestRight{1.0f, 0.0f, 0.0f};
+
+    void SyncOffsetFromRotation();
+    void SyncEulerFromOrbit();
 };
 
 } // namespace ogl

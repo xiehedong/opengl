@@ -32,8 +32,9 @@ opengl/
 
 ## 相机与场景包围盒
 
-- `ogl::Camera` 为轨道相机：状态为 `Target`、`Yaw`、`Pitch`、`Distance`；机位由 `Target` 与朝向推算，不单独存储。
+- `ogl::Camera` 为轨道相机：主状态为 `Target`、`OrbitRotation`（四元数）、`OrbitRestOffset` / `OrbitRestRight`（初始机位在 rest 系下的偏移与右轴）、`Distance`。每帧拖动：`OrbitRotation = q_yaw(WorldUp) * OrbitRotation * q_pitch(局部右轴)`（先世界 yaw，再 rest 系右轴上的局部 pitch），`OrbitOffsetDirection = OrbitRotation * OrbitRestOffset`。**勿**用 `cross(WorldUp, offset)` 当俯仰轴——过极点时该切向会翻转 180°，会导致 `lookAt` 的 up 突变；局部 pitch + 由四元数推出的 `Right()` 与常见 DCC/引擎轨道一致。`Yaw` / `Pitch` 仅为读数，过极点时可能跳变。
 - Sample 通过 `OnGatherSceneBounds` 向 `SceneBounds` 上报几何包围盒；`Application` 在首帧（或调用 `RequestSceneFrame()` 后下一帧）用 `Camera::FrameScene` 将观察中心对准包围盒中心并调整距离与近远裁剪面。
+- `Camera::ResetOrbitViewToNegativeZ` 将轨道旋转归零、视线沿世界 \f$-Z\f$（机位在目标 \f$+Z\f$ 侧）；常与 `FrameScene` 联用以把焦点拉回包围盒中心并重新拟合距离。
 - `Camera::MakePickRay` 供日后其他主题（如物体拾取）使用；**德劳内系列** 在程序内生成点与插入序列，不依赖拾取。详见 [roadmap.md](roadmap.md)。
 
 ## 着色器管线（`ogl::Shader`）

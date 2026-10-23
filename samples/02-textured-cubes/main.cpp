@@ -176,6 +176,17 @@ protected:
         ImGui::SliderFloat("Camera distance", &GetCamera().Distance, 0.5f, 200.0f);
         ImGui::Text("FPS: %.1f", Fps());
         ImGui::Text("LMB: orbit, MMB: pan, wheel: zoom");
+        if (ImGui::Button("Reset camera"))
+        {
+            GetCamera().ResetOrbitViewToNegativeZ();
+            const int width = GetWindow().Width();
+            const int height = GetWindow().Height();
+            const float aspect = height > 0 ? static_cast<float>(width) / static_cast<float>(height) : 1.0f;
+            if (GetSceneBounds().IsValid())
+            {
+                GetCamera().FrameScene(GetSceneBounds().Box(), aspect);
+            }
+        }
         if (ImGui::Button("Frame scene"))
         {
             RequestSceneFrame();
